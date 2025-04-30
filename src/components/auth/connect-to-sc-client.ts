@@ -1,3 +1,3 @@
-import { ScClient } from '../../ts-sc-client/src'
+import { ScClient } from 'ts-sc-client'
 
-export const client = new ScClient(`https://localhost:${import.meta.env.VITE_MACHINE_PORT}`);
+export const client = new ScClient(`ws://localhost:${import.meta.env.VITE_MACHINE_PORT}`);

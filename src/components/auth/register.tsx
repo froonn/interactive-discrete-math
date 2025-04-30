@@ -1,5 +1,7 @@
 import { useState } from 'preact/hooks';
-// import { client } from './connect-to-sc-client'
+import { client } from './connect-to-sc-client'
+import { generateSalt, hashPassword } from './auth-utils';
+
 
 function validatePassword(password: string): string | null {
   const minLength = 8;
@@ -22,6 +24,30 @@ function validatePassword(password: string): string | null {
   return null;
 }
 
+async function registerUser(login: string, password: string) {
+
+  const found = await client.searchLinksByContents([`user_${login}`]);
+
+  if (found[0].length) {
+    return { success: false, error: 'Логин уже занят' };
+  }
+
+  const salt = generateSalt();
+  const doubleHash = hashPassword(password, salt);
+
+  const res = await client.generateElementsBySCs(
+    [`concept_user -> user_${login};;`,
+     `user_${login} => nrel_username: ${login};;`,
+     `user_${login} => nrel_hashed_password: ${doubleHash};;`,
+     `user_${login} => nrel_salt: ${salt};;`]
+  );
+
+  if (res) {
+    return { success: true };
+  } else
+    return { success: false, error: 'Неизвестная ошибка' }
+}
+
 type RegisterProps = {
   onSwitchToLogin?: () => void;
 };
@@ -31,8 +57,13 @@ export const Register = ({ onSwitchToLogin }: RegisterProps) => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (event: Event) => {
+  const handleSubmit = async (event: Event) => {
+
+    console.log('Register in with:', { username, password });
+
     event.preventDefault();
     const err = validatePassword(password);
     if (err) {
@@ -40,10 +71,20 @@ export const Register = ({ onSwitchToLogin }: RegisterProps) => {
       return;
     }
     setError(null);
+    setLoading(true);
+    setSuccess(false);
 
-    // TODO: обработка регистрации (отправка данных)
+    const result = await registerUser(username, password);
 
-    console.log('Registering with:', { username, password });
+    setLoading(false);
+
+    if (result.success) {
+      setSuccess(true);
+      setUsername('');
+      setPassword('');
+    } else {
+      setError(result.error || 'Ошибка регистрации');
+    }
   };
 
   return (
@@ -77,8 +118,10 @@ export const Register = ({ onSwitchToLogin }: RegisterProps) => {
             Показать пароль
           </label>
           {error && <div class="text-red-600 mt-2 text-sm">{error}</div>}
+          {success && <div class="text-green-600 mt-2 text-sm">Регистрация успешна!</div>}
+          {loading && <div class="text-gray-600 mt-2 text-sm">Регистрация...</div>}
         </div>
-        <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded w-full">
+        <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded w-full" disabled={loading}>
           Зарегистрироваться
         </button>
         <button
