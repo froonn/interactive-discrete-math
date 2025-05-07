@@ -1,52 +1,5 @@
 import { useState } from 'preact/hooks';
-import { client } from './connect-to-sc-client'
-import { generateSalt, hashPassword } from './auth-utils';
-
-
-function validatePassword(password: string): string | null {
-  const minLength = 8;
-  const groups = [
-    /[a-z]/,
-    /[A-Z]/,
-    /\d/,
-    /[!@#$%^&*()_+{}\[\]:;<>,.?~\\/-]/
-  ];
-
-  if (password.length < minLength) {
-    return 'Пароль должен содержать не менее 8 символов';
-  }
-
-  const matchedGroups = groups.reduce((acc, rx) => acc + Number(rx.test(password)), 0);
-  if (matchedGroups < 3) {
-    return 'Пароль должен содержать символы как минимум из трёх групп: строчные/заглавные латинские буквы, цифры и специальные символы';
-  }
-
-  return null;
-}
-
-async function registerUser(login: string, password: string) {
-
-  const found = await client.searchLinksByContents([`user_${login}`]);
-
-  if (found[0].length) {
-    return { success: false, error: 'Логин уже занят' };
-  }
-
-  const salt = generateSalt();
-  const doubleHash = hashPassword(password, salt);
-
-  const res = await client.generateElementsBySCs(
-    [`concept_user -> user_${login};;`,
-     `user_${login} => nrel_username: ${login};;`,
-     `user_${login} => nrel_hashed_password: ${doubleHash};;`,
-     `user_${login} => nrel_salt: ${salt};;`]
-  );
-
-  if (res) {
-    return { success: true };
-  } else
-    return { success: false, error: 'Неизвестная ошибка' }
-}
+import { registerUser } from './api';
 
 type RegisterProps = {
   onSwitchToLogin?: () => void;
@@ -61,29 +14,24 @@ export const Register = ({ onSwitchToLogin }: RegisterProps) => {
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (event: Event) => {
-
-    console.log('Register in with:', { username, password });
-
     event.preventDefault();
-    const err = validatePassword(password);
-    if (err) {
-      setError(err);
-      return;
-    }
     setError(null);
-    setLoading(true);
     setSuccess(false);
 
-    const result = await registerUser(username, password);
+    try {
+      const result = await registerUser(username, password);
 
-    setLoading(false);
-
-    if (result.success) {
-      setSuccess(true);
-      setUsername('');
-      setPassword('');
-    } else {
-      setError(result.error || 'Ошибка регистрации');
+      if (result.success) {
+        setSuccess(true);
+        setUsername('');
+        setPassword('');
+      } else {
+        setError(result.error || 'Ошибка регистрации');
+      }
+    } catch {
+      setError('Сетевая ошибка');
+    } finally {
+      setLoading(false);
     }
   };
 

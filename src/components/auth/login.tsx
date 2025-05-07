@@ -1,5 +1,5 @@
 import { useState } from 'preact/hooks';
-// import { client } from './connect-to-sc-client'
+import { loginUser } from './api'
 
 
 type LoginProps = {
@@ -10,14 +10,34 @@ export const Login = ({ onSwitchToRegister }: LoginProps) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (event: Event) => {
-    event.preventDefault();
+  const handleSubmit = async (event: Event) => {
+    event.preventDefault()
+    setError(null);
+    setSuccess(false);
 
-    // TODO: Handle login logic here
 
-    console.log('Logging in with:', { username, password });
-  };
+    try {
+      const result = await loginUser(username, password);
+
+      if (result.success) {
+        setSuccess(true);
+        setUsername('');
+        setPassword('');
+      } else {
+        setError(result.error || 'Ошибка входа');
+      }
+    } catch {
+      setError('Сетевая ошибка');
+    } finally {
+      setLoading(false);
+    }
+
+    console.log('Logging in with:', { username, password })
+  }
 
   return (
     <div class="flex flex-col items-center justify-center h-screen">
@@ -49,6 +69,9 @@ export const Login = ({ onSwitchToRegister }: LoginProps) => {
             />
             Показать пароль
           </label>
+          {error && <div class="text-red-600 mt-2 text-sm">{error}</div>}
+          {success && <div class="text-green-600 mt-2 text-sm">Авторизация успешна!</div>}
+          {loading && <div class="text-gray-600 mt-2 text-sm">Авторизация...</div>}
         </div>
         <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded w-full">
           Войти
