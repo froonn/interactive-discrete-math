@@ -1,12 +1,13 @@
 import { useState } from 'preact/hooks';
 import { loginUser } from './api'
-
+import { setAuthenticated } from './use-auth-state.ts'
 
 type LoginProps = {
   onSwitchToRegister?: () => void;
+  onAuthSuccess?: () => void;
 };
 
-export const Login = ({ onSwitchToRegister }: LoginProps) => {
+export const Login = ({ onSwitchToRegister, onAuthSuccess }: LoginProps) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -18,7 +19,7 @@ export const Login = ({ onSwitchToRegister }: LoginProps) => {
     event.preventDefault()
     setError(null);
     setSuccess(false);
-
+    setLoading(true);
 
     try {
       const result = await loginUser(username, password);
@@ -27,6 +28,12 @@ export const Login = ({ onSwitchToRegister }: LoginProps) => {
         setSuccess(true);
         setUsername('');
         setPassword('');
+        if (onAuthSuccess) {
+          onAuthSuccess();
+        }
+        if (result.accessToken && result.user) {
+        setAuthenticated(result.accessToken, result.user);
+        }
       } else {
         setError(result.error || 'Ошибка входа');
       }
@@ -35,8 +42,7 @@ export const Login = ({ onSwitchToRegister }: LoginProps) => {
     } finally {
       setLoading(false);
     }
-
-    console.log('Logging in with:', { username, password })
+    console.log('Logging in with:', { username, password });
   }
 
   return (
@@ -73,7 +79,7 @@ export const Login = ({ onSwitchToRegister }: LoginProps) => {
           {success && <div class="text-green-600 mt-2 text-sm">Авторизация успешна!</div>}
           {loading && <div class="text-gray-600 mt-2 text-sm">Авторизация...</div>}
         </div>
-        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded w-full">
+        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded w-full" disabled={loading}>
           Войти
         </button>
         <button

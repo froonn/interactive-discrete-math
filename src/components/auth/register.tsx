@@ -17,6 +17,7 @@ export const Register = ({ onSwitchToLogin }: RegisterProps) => {
     event.preventDefault();
     setError(null);
     setSuccess(false);
+    setLoading(true);
 
     try {
       const result = await registerUser(username, password);
@@ -25,6 +26,10 @@ export const Register = ({ onSwitchToLogin }: RegisterProps) => {
         setSuccess(true);
         setUsername('');
         setPassword('');
+        // Если есть токен, можно сохранить его здесь
+        if (result.accessToken) {
+          localStorage.setItem('accessToken', result.accessToken);
+        }
       } else {
         setError(result.error || 'Ошибка регистрации');
       }
@@ -33,6 +38,8 @@ export const Register = ({ onSwitchToLogin }: RegisterProps) => {
     } finally {
       setLoading(false);
     }
+
+    console.log('Register in with:', { username, password });
   };
 
   return (

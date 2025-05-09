@@ -1,12 +1,3 @@
-export function generateSalt(length = 5): string {
-  const symbols = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
-  let salt = '';
-  for (let i = 0; i < length; i++) {
-    salt += symbols[Math.floor(Math.random() * symbols.length)];
-  }
-  return salt;
-}
-
 export function validatePassword(password: string): string | null {
   const minLength = 8;
   const groups = [
