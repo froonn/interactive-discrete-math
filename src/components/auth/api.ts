@@ -50,3 +50,16 @@ export async function loginUser(login: string, password: string): Promise<AuthRe
     return { success: false, error: 'Network error' };
   }
 }
+
+export async function deleteRefreshToken(): Promise<AuthResponse> {
+  try {
+    const res = await api.post<AuthResponse>('/api/auth/logout');
+    console.log(res.data);
+    return res.data;
+  } catch (error: any) {
+    if (error.response) {
+      return error.response.data;
+    }
+    return { success: false, error: 'Network error' };
+  }
+}

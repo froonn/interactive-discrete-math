@@ -1,5 +1,6 @@
 import { signal } from '@preact/signals';
 import { useCallback } from 'preact/hooks';
+import { deleteRefreshToken } from './api.ts'
 
 const isAuthenticatedSignal = signal<boolean>(!!localStorage.getItem('accessToken'));
 const storedUsername = localStorage.getItem('username');
@@ -19,20 +20,21 @@ export function setAuthenticated(token: string, username: string) {
   isAuthenticatedSignal.value = true;
 }
 
-export function logout() {
-  localStorage.removeItem('accessToken');
-  localStorage.removeItem('username');
-  isAuthenticatedSignal.value = false;
-  usernameSignal.value = null;
+export async function logout() {
+  localStorage.removeItem('accessToken')
+  localStorage.removeItem('username')
+  isAuthenticatedSignal.value = false
+  usernameSignal.value = null
+  await deleteRefreshToken()
 }
 
 export function useAuthState() {
   const isAuthenticated = isAuthenticatedSignal.value;
   const username = usernameSignal.value;
 
-  const handleLogout = useCallback(() => {
-    logout();
-  }, []);
+  const handleLogout = useCallback(async () => {
+    await logout()
+  }, [])
 
   return {
     isAuthenticated,
